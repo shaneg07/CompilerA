@@ -1,0 +1,15 @@
+C:\Users\shane\OneDrive\Desktop\CompilerA\bin\Debug\net7.0\CompilerA.exe
+C:\Users\shane\OneDrive\Desktop\CompilerA\bin\Debug\net7.0\CompilerA.deps.json
+C:\Users\shane\OneDrive\Desktop\CompilerA\bin\Debug\net7.0\CompilerA.runtimeconfig.json
+C:\Users\shane\OneDrive\Desktop\CompilerA\bin\Debug\net7.0\CompilerA.dll
+C:\Users\shane\OneDrive\Desktop\CompilerA\bin\Debug\net7.0\CompilerA.pdb
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.csproj.AssemblyReference.cache
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.AssemblyInfoInputs.cache
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.AssemblyInfo.cs
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.csproj.CoreCompileInputs.cache
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.dll
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\refint\CompilerA.dll
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.pdb
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\CompilerA.genruntimeconfig.cache
+C:\Users\shane\OneDrive\Desktop\CompilerA\obj\Debug\net7.0\ref\CompilerA.dll
