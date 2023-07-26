@@ -1,6 +1,6 @@
 ### Building a Compiler.
 
-Should be a good learning exercise, and can be used to demonstrate my knowledge as well?
+Should be a good learning exercise, and can be used to demonstrate my knowledge as well? Currently a basic expression evaluator.
 
 1.  Built a compiler from scratch, using C#. Made use of theory learnt in
     Compiler Design, to build various components.
