@@ -1,4 +1,7 @@
-﻿static void PrettyPrint(SyntaxNode node, string indent = "", bool isLast = true)
+﻿using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+
+static void PrettyPrint(SyntaxNode node, string indent = "", bool isLast = true)
 {
 
     var marker = isLast ? "└──" : "├──";
@@ -13,7 +16,7 @@
         Console.Write(t.Value);
     }
     Console.WriteLine();
-    indent += isLast ? "    " : "│   ";
+    indent += isLast ? "   " : "│  ";
     var lastChild = node.GetChildren().LastOrDefault();
 
     foreach (var child in node.GetChildren())
@@ -22,21 +25,37 @@
     }
 }
 
-
+var showTree = false;
 
 while(true)
 {
     Console.Write("> ");
     var line = Console.ReadLine();
+    var syntaxTree = SyntaxTree.Parse(line);
 
-    var parser = new Parser(line);
-    var syntaxTree = parser.Parse();
-    var color = Console.ForegroundColor;
-    Console.ForegroundColor = ConsoleColor.DarkGray;
-    PrettyPrint(syntaxTree.Root);
-    Console.ForegroundColor = color;
+    if (line == "#showTree")
+    {
+        showTree = !showTree;
+        Console.WriteLine(showTree ? "Showing tree" : "Not showing tree");
+        continue;
+    }
 
-    if(syntaxTree.Diagnostics.Any())
+    if (showTree)
+    {
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        PrettyPrint(syntaxTree.Root);
+        Console.ResetColor();
+        
+    }
+
+    if (!syntaxTree.Diagnostics.Any())
+    {
+        var e = new Evaluator(syntaxTree.Root);
+        var result = e.Evaluate();
+        Console.WriteLine(result);
+    }
+    else
     {
         Console.ForegroundColor = ConsoleColor.DarkRed;
 
@@ -45,8 +64,8 @@ while(true)
             Console.WriteLine(diagnostic);
         }
 
-        Console.ForegroundColor = color;
-    
+        Console.ResetColor();
+
     }
 
 }
@@ -64,7 +83,8 @@ enum SyntaxKind
     BadToken,
     EOFToken,
     NumberExpression,
-    BinaryExpression
+    BinaryExpression,
+    ParenthesisExpression
 }
 class SyntaxToken : SyntaxNode
 {
@@ -132,7 +152,10 @@ class Lexer
 
             var length = _position - start;
             var text = _text.Substring(start, length);
-            int.TryParse(text, out var value);
+            if(!int.TryParse(text, out var value))
+            {
+                _diagnostics.Add($"{_text} isn't valid Int32.");
+            }
             return new SyntaxToken(SyntaxKind.NumberToken, start, text, value);
         }
 
@@ -233,6 +256,30 @@ sealed class BinaryExpressionSyntax : ExpressionSyntax
 
 }
 
+sealed class ParenthesisSyntax : ExpressionSyntax
+{
+    public ParenthesisSyntax(SyntaxToken openPToken, ExpressionSyntax expression, SyntaxToken closePToken)
+    {
+        OpenPToken = openPToken;
+        Expression = expression;
+        ClosePToken = closePToken;
+    }
+    public SyntaxToken OpenPToken {get;}
+    public ExpressionSyntax Expression {get;}
+    public SyntaxToken ClosePToken {get;}
+    
+    public override SyntaxKind Kind => SyntaxKind.ParenthesisExpression;
+
+    public override IEnumerable<SyntaxNode> GetChildren()
+    {
+        yield return OpenPToken;
+        yield return Expression;
+        yield return ClosePToken;
+        
+    }
+
+}
+
 sealed class SyntaxTree
 {
     public SyntaxTree(IEnumerable<string> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
@@ -244,6 +291,12 @@ sealed class SyntaxTree
     public ExpressionSyntax Root { get; }
     public SyntaxToken EndOfFileToken { get; }
     public IReadOnlyList<string> Diagnostics { get; }
+
+    public static SyntaxTree Parse(string text)
+    {
+        var parser = new Parser(text);
+        return parser.Parse();
+    }
 
 }
 
@@ -303,19 +356,38 @@ class Parser
         return new SyntaxToken(kind, Current.Position, null, null);
     }
 
+    private ExpressionSyntax ParseExpression()
+    {
+        return ParseTerm();
+    }
+
     public SyntaxTree Parse()
     {
-        var expression = ParseExpression();
+        var expression = ParseTerm();
         var endOfFileToken = Match(SyntaxKind.EOFToken);
         return new SyntaxTree(_diagnostics, expression, endOfFileToken);
     }
 
-    private ExpressionSyntax ParseExpression()
+    private ExpressionSyntax ParseTerm()
     {
-        var left = ParsePrimaryExpression();
+        var left = ParseFactor();
 
         while(Current.Kind == SyntaxKind.PlusToken || 
                 Current.Kind == SyntaxKind.MinusToken)
+                {
+                    var operatorToken = NextToken();
+                    var right = ParseFactor();
+                    left = new BinaryExpressionSyntax(left, operatorToken, right);
+                }
+
+                return left;
+    }
+    private ExpressionSyntax ParseFactor()
+    {
+        var left = ParsePrimaryExpression();
+
+        while(Current.Kind == SyntaxKind.StarToken || 
+                Current.Kind == SyntaxKind.SlashToken)
                 {
                     var operatorToken = NextToken();
                     var right = ParsePrimaryExpression();
@@ -327,8 +399,76 @@ class Parser
 
     private ExpressionSyntax ParsePrimaryExpression()
     {
+
+        if( Current.Kind == SyntaxKind.OpenPToken)
+        {
+            var left = NextToken();
+            var expression = ParseExpression();
+            var right = Match(SyntaxKind.ClosePToken);
+            return new ParenthesisSyntax(left, expression, right);
+        }
+
         var numberToken = Match(SyntaxKind.NumberToken);
         return new NumberExpressionSyntax(numberToken);
     }
 
 }
+
+class Evaluator
+{
+    private readonly ExpressionSyntax _root;
+
+    public Evaluator(ExpressionSyntax node)
+    {
+        this._root = node;
+    }
+
+    public int Evaluate()
+    {
+        return EvaluateExpression(_root);
+    }
+
+    private int EvaluateExpression(ExpressionSyntax node)
+    {
+        if (node is NumberExpressionSyntax n)
+        {
+            return (int)n.NumberToken.Value;
+        }
+        if (node is BinaryExpressionSyntax b)
+        {
+            var left = EvaluateExpression(b.Left);
+            var right = EvaluateExpression(b.Right);
+            
+            switch(b.OperatorToken.Kind)
+            {
+                case SyntaxKind.PlusToken:
+                    return left + right;
+                    break;
+                    
+                case SyntaxKind.MinusToken:
+                    return left - right;
+                    break;
+                    
+                case SyntaxKind.StarToken:
+                    return left * right;
+                    break;
+                    
+                case SyntaxKind.SlashToken:
+                    return left / right;
+                    break;
+
+                default:
+                    throw new Exception($"Unexpected binary operator {b.OperatorToken.Kind}");
+                    break;
+            } 
+        }
+
+        if(node is ParenthesisSyntax p)
+        {
+            return EvaluateExpression(p.Expression);
+        }
+        throw new Exception($"Unexpected node: {node.Kind}");
+    }
+}
+
+
